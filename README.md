@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 *<h1> Deep Learning Neural Networks for Chronic Kidney Disease Class Prediction</h1>*</br>
 Python Keras & PyTorch</br>
     Kidney disease often has no symptoms until your kidneys are badly damaged. More than one in seven American adults, about 35.5 million people (14%), are estimated to have Chronic Kidney Disease (CDC, 2023), which about nine out of ten do not know about it. The underrepresented group of patients with ages equal and greater than 75 who had Atrial Fibrillation and Type-II diabetes were selected from NIH All-of-Us web portal. They were qualified for receiving oral anticoagulation medications according to the American College of Cardiology and American Heart Association (ACC/AHA) scoring system abbreviated CHA2DS2-VASc. We queried laboratory test results for simultaneous bivariate of the Estimated Glomerular Filtration Rate (eGFR) as suggested by the Modification of Diet in Renal Disease (MDRD) formula and Glycated Hemoglobin (HbA1c) for the long-term plasma glucose level to investigate the association of these independent variables with the probability of Chronic Kidney Disease (CKD) and vice versa.</br>
@@ -7,3 +8,7 @@ Python Keras & PyTorch</br>
     We used one-way ANOVA to investigate the equality of eGFR means across three cohorts (Levene’s Test for Homogeneity F-Value =3.34, P-value = 0.0354) and noticed bimodal peaks in values of noCKD cohort (eGFR=60, percent=46.22; eGFR=84, percent=14.419), so we also ran the non-parametric ANOVA (Kruskal-Wallis test) for medians of ranked scores across cohorts that rejected the null hypothesis (p < 0.0001). The omnibus null hypothesis for equality of HbA1c means across cohorts was not rejected (F-Value= 0.6, P= 0.5482). Therefore, we did not perform any post-hoc tests to further investigate the differences in means (CKD=6.72, noCKD= 6.67, preCKD=.6.72). We used Python libraries for deep learning neural networks to evaluate the numerical values of eGFR and HbA1c; in conjunction with nominal indicator codes of race and sex at birth to make logistic regression models that could make predictions for the probability of CKD (Keras AUC= 87.61%  & PyTorch AUC= 73.8%).  
 
 
+=======
+# CKD_DLNNets
+Deep learning neural networks for chronic kidney disease logistic regression
+>>>>>>> e40f1b0cb637d5071dfb5bf06bce1f7d203c85cb
