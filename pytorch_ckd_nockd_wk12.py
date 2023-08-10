@@ -188,6 +188,14 @@ def predict(row, model):
     yhat = yhat.detach().numpy()
     return yhat
 
+#path= 'torch_nockd.csv' dataset asked by dr. yin in wk13
+path= 'torch_nockd_ckd.csv' #dataset used
+train_dl, test_dl = prepare_data(path)
+print( len(train_dl.dataset), len(test_dl.dataset))
+model = MLP(6)
+train_model(train_dl, model)
+ 
+
 predictions1, actuals1 = list(), list()
 for i, (inputs, targets) in enumerate(test_dl):
     # evaluate the model on the test set
