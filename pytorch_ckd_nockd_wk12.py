@@ -33,7 +33,7 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 
 ##import 'torch_nockd_ckd.csv' from orkspace bucket
 from sklearn.metrics import roc_auc_score
@@ -211,18 +211,22 @@ for i, (inputs, targets) in enumerate(test_dl):
     actuals1.append(actual1)
 predictions1, actuals1 = vstack(predictions1), vstack(actuals1)
 # calculate accuracy
-print(len(predictions1)) ##749
-print(len(actuals1))  #749
+print(len(predictions1)) 
+##749
+print(len(actuals1))  
+#749
 
 
-auc = roc_auc_score(predictions1, actuals1)
-print("AUC:", auc) #AUC: 0.7378453966584881
+auc = roc_auc_score(actuals1, predictions1)
+print("AUC:", auc) 
+#AUC: 0.7648958842072549
 
 
 acc = evaluate_model(test_dl, model)
-print('Accuracy: %.3f' % acc) #Accuracy: 0.722
+print('Accuracy: %.3f' % acc) 
+#Accuracy: 0.805
 
-com = confusion_matrix( predictions1, actuals1)
+com = confusion_matrix(actuals1, predictions1)
 sns.heatmap(com, annot=True, fmt='d', cmap='Blues')
 plt.xlabel('Predicted labels')
 plt.ylabel('True labels')

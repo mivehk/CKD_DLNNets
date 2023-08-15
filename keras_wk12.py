@@ -1,6 +1,7 @@
 import pandas
 import os
-from sklearn.model_selection import train_test_splitimport numpy as np
+from sklearn.model_selection import train_test_split
+import numpy as np
 
 from tensorflow.keras.metrics import AUC
 from tensorflow.keras.models import Sequential
@@ -90,7 +91,7 @@ print(f'{j} correct predictions out of {len(predictions1)} which is about {round
 #626 correct predictions out of 750 which is about 83 percent
 
 firstpre = np.array(rounded1) ## predicttions are converted to numpy array 
-com1 = confusion_matrix( firstpre, y2)
+com1 = confusion_matrix( jh2, firstpre)
 sns.heatmap(com1, annot=True, fmt='d', cmap='Blues')
 plt.xlabel('Predicted labels')
 plt.ylabel('True labels')
