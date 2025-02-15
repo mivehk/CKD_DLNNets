@@ -55,7 +55,7 @@ Epoch 150/150
 <keras.callbacks.History at 0x7f66b28e1f10>
 '''
 
-results = model.evaluate(X1, y1)
+results = model.evaluate(X1, y1) #test data was used with X2 , y2
 print('Loss is : %.2f' % (results[0] * 100), '%')
 print('Accuracy: %.2f' % (results[1] * 100), '%') 
 print('AUC: %.2f' % (results[2] * 100), '%') 

@@ -1,4 +1,6 @@
 !pip install torch==1.13.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
+##pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu118
+
 
 '''
 Looking in links: https://download.pytorch.org/whl/torch_stable.html
@@ -35,7 +37,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 
-##import 'torch_nockd_ckd.csv' from orkspace bucket
+#import 'torch_nockd_ckd.csv' from orkspace bucket
 from sklearn.metrics import roc_auc_score
 
 import torch
@@ -55,7 +57,8 @@ from torch.optim import SGD
 from torch.nn import BCELoss
 from torch.nn.init import kaiming_uniform_
 from torch.nn.init import xavier_uniform_
-
+##from torch.nn.parallel import DistributedDataParallel as DDP
+##from torch.utils.data.distributed import DistributedSampler
 
 class CSVDataset(Dataset):
     # load the dataset
@@ -96,10 +99,12 @@ class MLP(Module):
         super(MLP, self).__init__()
         # input to first hidden layer
         self.hidden1 = Linear(n_inputs, 10)
+        ##self.hidden1 = Linear(n_inputs, 10).to('cuda:0')
         kaiming_uniform_(self.hidden1.weight, nonlinearity='relu')
         self.act1 = ReLU()
         # second hidden layer
         self.hidden2 = Linear(10, 6)
+        ##self.hidden2 = Linear(10, 6).to('cuda:1')
         kaiming_uniform_(self.hidden2.weight, nonlinearity='relu')
         self.act2 = ReLU()
         # third hidden layer and output
@@ -112,7 +117,7 @@ class MLP(Module):
         # input to first hidden layer
         X = self.hidden1(X)
         X = self.act1(X)
-         # second hidden layer
+        # second hidden layer
         X = self.hidden2(X)
         X = self.act2(X)
         # third hidden layer and output
@@ -126,8 +131,11 @@ def prepare_data(path):
     dataset = CSVDataset(path)
     # calculate split
     train, test = dataset.get_splits()
+    ## distribute for bigdata
+    ##train_sampler = DistributedSampler(train_dataset)
     # prepare data loaders
     train_dl = DataLoader(train, batch_size=32, shuffle=True)
+    ##train_dl = DataLoader(train, sampler=train_sampler, batch_size=32)
     test_dl = DataLoader(test, batch_size=512, shuffle=False)
     return train_dl, test_dl
 
@@ -193,6 +201,7 @@ path= 'torch_nockd_ckd.csv' #dataset used
 train_dl, test_dl = prepare_data(path)
 print( len(train_dl.dataset), len(test_dl.dataset))
 model = MLP(6)
+##model = DDP(model)
 train_model(train_dl, model)
  
 
@@ -212,7 +221,7 @@ for i, (inputs, targets) in enumerate(test_dl):
 predictions1, actuals1 = vstack(predictions1), vstack(actuals1)
 # calculate accuracy
 print(len(predictions1)) 
-##749
+#749
 print(len(actuals1))  
 #749
 
