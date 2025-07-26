@@ -176,7 +176,8 @@ def evaluate_model(test_dl, model):
         yhat = yhat.detach().numpy()
         actual = targets.numpy()
         actual = actual.reshape((len(actual), 1))
-        # round to class values
+        # round to class values 
+        # because ValueError: Classification metrics can't handle a mix of binary and continuous targets (probabilities)
         yhat = yhat.round()
         # store
         predictions.append(yhat)
