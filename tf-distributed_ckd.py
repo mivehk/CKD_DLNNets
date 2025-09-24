@@ -25,10 +25,13 @@ df = nockd_ckd.copy()
 scalerMM = MinMaxScaler()
 scalerSS = StandardScaler()
 
-# Fit on the training set and transform both columns
-df[cols_to_scale] = scalerMM.fit_transform(df[cols_to_scale])
-
+# Split dataframe before scaling so model won't be exposed to test dataset.
 train_data, test_data = train_test_split(df, test_size=0.33, random_state=42)
+
+# Fit on the training set to have data_min_, data_max_, mean_ and scale_ objects
+#then scale testing dataset using that scaling
+train_data[cols_to_scale] = scalerMM.fit_transform(train_data[cols_to_scale])
+test_data[cols_to_scale] = scalerMM.transform(test_data[cols_to_scale])
 
 print(len(train_data)) #1520
 print(len(test_data)) #750
@@ -107,7 +110,7 @@ model.save('ckd_model_keras.keras')
 
 
 
-# Input my personal data from the NYU Langone 1/17/2020 test results
+# Input my personal data from the NYU Langone 1/17/2020 as one test result.
 # Format: [egfr, hba1c, sab, race_black, race_asian, race_other]
 input_data = [[4.7, 8.7, 0, 0, 0, 0]]
 
@@ -116,7 +119,7 @@ input_data = [[4.7, 8.7, 0, 0, 0, 0]]
 scaler = joblib.load('egfr_hba1c_minmax_scaler.pkl')
 
 # Apply the same MinMax scaling to egfr and hba1c
-# Assume egfr = col 0 and hba1c = col 1
+# egfr = col0 and hba1c = col1, but transform expects 2d array, so adding [0] at the end.
 input_data[0][0:2] = scaler.transform([input_data[0][0:2]])[0]
 
 
@@ -124,10 +127,10 @@ input_data[0][0:2] = scaler.transform([input_data[0][0:2]])[0]
 model = load_model('ckd_model_keras.keras')
 
 
-# Convert to NumPy array and reshape if necessary
+# Convert 2D list to 2d NumPy array because keras expects numpy array (or tensors) not python list.
 input_array = np.array(input_data)
 
-# Predict CKD probability
+# Predict CKD probability and extract floating point scaler from predicted 2d numpy array.
 prediction = model.predict(input_array)[0][0]
 
 # Interpret the result
