@@ -71,7 +71,17 @@ strategy = tf.distribute.TPUStrategy(resolver)
 # 4- Parameter server strategy
 strategy = tf.distribute.experimental.ParameterServerStrategy()
 
+#declarative is compact for declaring fixed architecture in one step.
+with strategy.scope():
+    model = Sequential([
+        Input(shape=(6,)), 
+        layers.Dense(6, activation='relu'),
+        layers.Dense(4, activation='relu'),
+        layers.Dense(2, activation='relu'),
+        layers.Dense(1, activation='sigmoid')
+    ])
 
+#imperative is stepwise when your architecture depends on conditions
 with strategy.scope():
     model = Sequential()
     model.add(Input(shape=(6,))) 
@@ -79,6 +89,7 @@ with strategy.scope():
     model.add(Dense(4, activation='relu'))
     model.add(Dense(2, activation='relu'))
     model.add(Dense(1, activation='sigmoid'))
+
 '''
 
 model = Sequential()
@@ -93,7 +104,7 @@ model.compile(
     optimizer='adam',
     metrics=['accuracy', AUC()])
 
-model.fit(X1, y1, epochs=150, batch_size=100)
+model.fit(X1, y1, epochs=32, batch_size=100)
 
 results = model.evaluate(X2, y2) 
 print('Loss is : %.2f' % (results[0] * 100), '%')
