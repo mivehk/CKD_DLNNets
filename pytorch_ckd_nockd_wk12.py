@@ -35,64 +35,72 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
-from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 
-#import 'torch_nockd_ckd.csv' from orkspace bucket
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
+from sklearn.metrics import roc_auc_score, accuracy_score
 
 import torch
 from numpy import vstack
 from pandas import read_csv
-from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import accuracy_score
-from torch.utils.data import Dataset
-from torch.utils.data import DataLoader
-from torch.utils.data import random_split
+
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from torch.utils.data import Dataset, DataLoader, random_split
+
 from torch import Tensor
-from torch.nn import Linear
-from torch.nn import ReLU
-from torch.nn import Sigmoid
-from torch.nn import Module
+from torch.nn import Linear, ReLU, Sigmoid, Module, BCELoss
 from torch.optim import SGD
-from torch.nn import BCELoss
-from torch.nn.init import kaiming_uniform_
-from torch.nn.init import xavier_uniform_
+
+from torch.nn.init import kaiming_uniform_, xavier_uniform_
+
 ##from torch.nn.parallel import DistributedDataParallel as DDP
 ##from torch.utils.data.distributed import DistributedSampler
 
+name_of_file_in_bucket = 'torch_nockd_ckd.csv'
+my_bucket = os.getenv('WORKSPACE_BUCKET')
+os.system(f"gsutil cp '{my_bucket}/data/{name_of_file_in_bucket}' .")
+print(f'[INFO] {name_of_file_in_bucket} is successfully downloaded into your working space')
+
 class CSVDataset(Dataset):
-    # load the dataset
+  
     def __init__(self, path):
-        # load the csv file as a dataframe
+        # load the csv file into memory as a pandas dataframe
         df = read_csv(path)
-        # store the inputs and outputs
-        self.X = df.values[:, :-1]
+        continuous_cols = ['egfr', 'hba1c']
+        categorical_cols = ['sab', 'race_black', 'race_asian', 'race_other']
+        Scaler = StandardScaler()
+        df[continuous_cols] = scaler.fit_transform(df[continuous_cols])
+        # store the inputs and outputs into numpy arrays - DataLoader will convert to tensor before passing to model
+        # self.X = df.values[:, :-1]
+        self.X = df[continuous_cols + categorical_cols].values
         self.y = df.values[:, -1]
         # input observations with their target class present the problem of interest
-        # ensure input data is floats
+        # ensure input data to pytorch are floating-point numbers.
+        # self.X.shape[0] is number of rows and self.X.shape[1] is number of features
         self.X = self.X.astype('float32')
-        # label encode target and ensure the values are floats
+        # learn the mapping of labels into indices and transform them.
         self.y = LabelEncoder().fit_transform(self.y)
         self.y = self.y.astype('float32')
+        # convert one dimensional labels into column vector (2D) - shape gets tuple even if 1d like (7,)
         self.y = self.y.reshape((len(self.y), 1))
  
     # number of rows in the dataset
     def __len__(self):
         return len(self.X)
  
-    # get a row at an index
+    # get a row at a certain index
     def __getitem__(self, idx):
         return [self.X[idx], self.y[idx]]
  
-    # get indexes for train and test rows
+    # split dataset into random list of indices defined by list items
+    # No generator means indices objects are non-deterministic without manual_seed
     def get_splits(self, n_test=0.33):
         # determine sizes
         test_size = round(n_test * len(self.X))
         train_size = len(self.X) - test_size
-        # calculate the split
+        # every run gets random indices of rows so function returns subset objects holding rows indices
         return random_split(self, [train_size, test_size])
  
-# model definition
+
 class MLP(Module):
     # define model elements
     def __init__(self, n_inputs):
@@ -127,13 +135,12 @@ class MLP(Module):
  
 # prepare the dataset
 def prepare_data(path):
-    # load the dataset
     dataset = CSVDataset(path)
-    # calculate split
+    # subset objects of dataset containing randomindices
     train, test = dataset.get_splits()
     ## distribute for bigdata
     ##train_sampler = DistributedSampler(train_dataset)
-    # prepare data loaders
+    # dataloader objects that become tensor before getting passed into model
     train_dl = DataLoader(train, batch_size=32, shuffle=True)
     ##train_dl = DataLoader(train, sampler=train_sampler, batch_size=32)
     test_dl = DataLoader(test, batch_size=512, shuffle=False)
@@ -143,25 +150,27 @@ def prepare_data(path):
  
 # train the model
 def train_model(train_dl, model):
-    # define the optimization (e.g., backpropagate calculate error gredients of loss function with respect to weight of the network)
+    # loss is the error between predicted probability and actual values
     criterion = BCELoss()
+    # backpropagation computes gradients of the loss function with respect to every weight and bias
+    # then optimizer uses those gradients with learning rate to update weights 
     optimizer = SGD(model.parameters(), lr=0.01, momentum=0.9)
-    # enumerate epochs
+    # each epoch is one through pass on dataset
     for epoch in range(100):
-        # enumerate mini batches of 100 epoch with train_data of 8x[32,34] and 8x[32,1] to satisfy train data size of close to 256 rows
-        for i, (inputs, targets) in enumerate(train_dl):
-            # clear the gradients
+        # enumerate mini batches of tensors generated by dataloader object 8x[32,6] and 8x[32,1] which is set of 256 divided by8 batches
+            for i, (inputs, targets) in enumerate(train_dl):
+            # clear the previous gradients
             optimizer.zero_grad()
-            # compute the model output
+            # compute the model output by running inputs through hidden/activation layers
             ## gredient vector is a vector of partial derivatives of function f with respect to(w.r.t) each independent variables.
             ## partial derivative is rate of change for function f with respoect to variable x. denoted as "f w.r.t x" which is ∂f/∂x 
-            ##https://machinelearningmastery.com/a-gentle-introduction-to-partial-derivatives-and-gradient-vectors  
+            ## https://machinelearningmastery.com/a-gentle-introduction-to-partial-derivatives-and-gradient-vectors  
             yhat = model(inputs)
             # calculate loss for model output -
             # gredients are derivative of the loss function showing how loss changes in respect to each parameter  
             # if pytorch.no_grad() is used then these gredients are not computed like during testing when we do not backpropagate.
             loss = criterion(yhat, targets)
-            # credit assignment
+            # calculate gradients of loss with respect to all model parameters
             loss.backward()
             # update model weights
             optimizer.step()
@@ -169,23 +178,24 @@ def train_model(train_dl, model):
 # evaluate the model
 def evaluate_model(test_dl, model):
     predictions, actuals = list(), list()
+    # iterate over dataloader object, which provides batches of tensors
     for i, (inputs, targets) in enumerate(test_dl):
         # evaluate the model on the test set
         yhat = model(inputs)
-        # retrieve numpy array
+        # retrieve predicted probabilities and ground-truth labels by numpy array
         yhat = yhat.detach().numpy()
         actual = targets.numpy()
         actual = actual.reshape((len(actual), 1))
-        # round to class values 
+        # round predicted values 
         # because ValueError: Classification metrics can't handle a mix of binary and continuous targets (probabilities)
         yhat = yhat.round()
-        # store
+        # store batch predictions and labels
         predictions.append(yhat)
-        actuals.append(actual)
-    predictions, actuals = vstack(predictions), vstack(actuals)
-    # calculate accuracy
+        actuals.append(actual)    
+    predictions, actuals = vstack(predictions), vstack(actuals) # stack all batches vertically into full test-set arrays
     acc = accuracy_score(actuals, predictions)
-    return acc
+    auc = roc_auc_score(actuals, predictions)
+    return acc, auc, predictions, actuals
  
 # make a class prediction for one row of data
 def predict(row, model):
@@ -197,42 +207,19 @@ def predict(row, model):
     yhat = yhat.detach().numpy()
     return yhat
 
-#path= 'torch_nockd.csv' dataset asked by dr. yin in wk13
-path= 'torch_nockd_ckd.csv' #dataset used
+
+path = name_of_file_in_bucket # 'torch_nockd_ckd.csv' #dataset used
 train_dl, test_dl = prepare_data(path)
 print( len(train_dl.dataset), len(test_dl.dataset))
 model = MLP(6)
 ##model = DDP(model)
 train_model(train_dl, model)
- 
-
-predictions1, actuals1 = list(), list()
-for i, (inputs, targets) in enumerate(test_dl):
-    # evaluate the model on the test set
-    yhat1 = model(inputs)
-    # retrieve numpy array
-    yhat1 = yhat1.detach().numpy()
-    actual1 = targets.numpy()
-    actual1 = actual1.reshape((len(actual1), 1))
-    # round to class values
-    yhat1 = yhat1.round()
-    # store
-    predictions1.append(yhat1)
-    actuals1.append(actual1)
-predictions1, actuals1 = vstack(predictions1), vstack(actuals1)
-# calculate accuracy
-print(len(predictions1)) 
-#749
-print(len(actuals1))  
-#749
+acc, auc, preds, labels = evaluate(test_dl, model)
 
 
-auc = roc_auc_score(actuals1, predictions1)
 print("AUC:", auc) 
 #AUC: 0.7648958842072549
 
-
-acc = evaluate_model(test_dl, model)
 print('Accuracy: %.3f' % acc) 
 #Accuracy: 0.805
 
