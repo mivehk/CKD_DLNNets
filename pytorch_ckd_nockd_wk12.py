@@ -197,9 +197,9 @@ def evaluate_model(test_dl, model):
  
 # make a class prediction for one row of data
 def predict(row, model):
-    # convert one row of features from numpy array shape of (6,) to Tensor
+    # wrap one row of features from numpy array shape of (6,) within list to become 2d and accepteed by Tensor
     row = Tensor([row])
-    # make prediction on that Tensor with shape of torch.Size([1, 6])
+    # model expects batch dimension (2d) to make prediction on that Tensor with shape of torch.Size([1, 6])
     yhat = model(row)
     # retrieve numpy array
     yhat = yhat.detach().numpy()
