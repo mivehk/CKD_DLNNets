@@ -32,24 +32,22 @@ Required-by:
 
 import os
 import pandas as pd
+from pandas import read_csv
 import numpy as np
+from numpy import vstack
+
 import seaborn as sns
 import matplotlib.pyplot as plt
 
 from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 from sklearn.metrics import roc_auc_score, accuracy_score
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 import torch
-from numpy import vstack
-from pandas import read_csv
-
-from sklearn.preprocessing import LabelEncoder, StandardScaler
-from torch.utils.data import Dataset, DataLoader, random_split
-
 from torch import Tensor
+from torch.utils.data import Dataset, DataLoader, random_split
 from torch.nn import Linear, ReLU, Sigmoid, Module, BCELoss
 from torch.optim import SGD
-
 from torch.nn.init import kaiming_uniform_, xavier_uniform_
 
 ## from torch.nn.parallel import DistributedDataParallel as DDP
@@ -80,7 +78,7 @@ class CSVDataset(Dataset):
         # learn the mapping of labels into indices and transform them.
         self.y = LabelEncoder().fit_transform(self.y)
         self.y = self.y.astype('float32')
-        # convert one dimensional labels into column vector (2D) - shape gets tuple even if 1d like (7,)
+        # convert one dimensional labels into column vector (2D) - numpy shape gets tuple even if it is 1d like (7,)
         self.y = self.y.reshape((len(self.y), 1))
  
     # number of rows in the dataset
@@ -97,7 +95,7 @@ class CSVDataset(Dataset):
         # determine sizes
         test_size = round(n_test * len(self.X))
         train_size = len(self.X) - test_size
-        # every run gets random indices of rows so function returns subset objects holding rows indices
+        # function returns subset objects of torch dataset holding random indices, so every run gets random rows 
         return random_split(self, [train_size, test_size])
  
 
@@ -136,7 +134,7 @@ class MLP(Module):
 # prepare the dataset
 def prepare_data(path):
     dataset = CSVDataset(path)
-    # subset objects of dataset containing randomindices
+    # subset objects of dataset containing random indices
     train, test = dataset.get_splits()
     ## distribute for bigdata
     ##train_sampler = DistributedSampler(train_dataset)
@@ -193,15 +191,15 @@ def evaluate_model(test_dl, model):
         predictions.append(yhat)
         actuals.append(actual)    
     predictions, actuals = vstack(predictions), vstack(actuals) # stack all batches vertically into full test-set arrays
-    acc = accuracy_score(actuals, predictions)
+    acc = accuracy_score(actuals, predictions) # first parameter must be labels
     auc = roc_auc_score(actuals, predictions)
     return acc, auc, predictions, actuals
  
 # make a class prediction for one row of data
 def predict(row, model):
-    # convert row to data
+    # convert one row of features from numpy array shape of (6,) to Tensor
     row = Tensor([row])
-    # make prediction
+    # make prediction on that Tensor with shape of torch.Size([1, 6])
     yhat = model(row)
     # retrieve numpy array
     yhat = yhat.detach().numpy()
@@ -209,18 +207,17 @@ def predict(row, model):
 
 
 name_of_file_in_bucket = 'torch_nockd_ckd.csv'
-path = name_of_file_in_bucket # 'torch_nockd_ckd.csv' #dataset used
+path = name_of_file_in_bucket # 'torch_nockd_ckd.csv' #The name of used dataset
 train_dl, test_dl = prepare_data(path)
 print( len(train_dl.dataset), len(test_dl.dataset)) # 1521 749
 model = MLP(6)
-##model = DDP(model)
+## model = DDP(model)
 train_model(train_dl, model)
 acc, auc, preds, labels = evaluate_model(test_dl, model)
 
 
 print("AUC:", auc) 
 #AUC: 0.8422897196261683
-
 print('Accuracy: %.3f' % acc) 
 #Accuracy: 0.853
 
