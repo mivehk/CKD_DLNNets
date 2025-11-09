@@ -1,35 +1,3 @@
-!pip install torch==1.13.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
-##pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu118
-
-
-'''
-Looking in links: https://download.pytorch.org/whl/torch_stable.html
-Collecting torch==1.13.1+cpu
-  Downloading https://download.pytorch.org/whl/cpu/torch-1.13.1%2Bcpu-cp310-cp310-linux_x86_64.whl (199.1 MB)
-     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 199.1/199.1 MB 69.2 MB/s eta 0:00:0000:0100:01
-Requirement already satisfied: typing-extensions in /opt/conda/lib/python3.10/site-packages (from torch==1.13.1+cpu) (4.12.2)
-Installing collected packages: torch
-Successfully installed torch-1.13.1+cpu
-
-[notice] A new release of pip is available: 25.1 -> 25.3
-[notice] To update, run: pip install --upgrade pip
-'''
-
-!pip show torch
-
-'''
-Name: torch
-Version: 1.13.1+cpu
-Summary: Tensors and Dynamic neural networks in Python with strong GPU acceleration
-Home-page: https://pytorch.org/
-Author: PyTorch Team
-Author-email: packages@pytorch.org
-License: BSD-3
-Location: /home/jupyter/.local/lib/python3.10/site-packages
-Requires: typing-extensions
-Required-by: 
-'''
-
 import os
 import pandas as pd
 from pandas import read_csv
