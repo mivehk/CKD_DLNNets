@@ -81,10 +81,10 @@ class MLP(Module):
         ##self.hidden2 = Linear(10, 6).to('cuda:1')
         kaiming_uniform_(self.hidden2.weight, nonlinearity='relu')
         self.act2 = ReLU()
-        # third hidden layer and output
-        self.hidden3 = Linear(6, 1)
+        # output layer
+        self.output = Linear(6, 1)
         xavier_uniform_(self.hidden3.weight)
-        self.act3 = Sigmoid()
+        self.out_act = Sigmoid()
  
     # forward propagate input
     def forward(self, X):
@@ -94,9 +94,9 @@ class MLP(Module):
         # second hidden layer
         X = self.hidden2(X)
         X = self.act2(X)
-        # third hidden layer and output
-        X = self.hidden3(X)
-        X = self.act3(X)
+        # output layer
+        X = self.output(X)
+        X = self.out_act(X)
         return X
  
 # prepare the dataset
